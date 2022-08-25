@@ -28,9 +28,22 @@ var uploadTests = []struct {
 	renameFile       bool
 	errorExpected    bool
 }{
-	{name: "allowed no rename", allowedFileTypes: []string{"image/jpeg", "image/png"}, renameFile: false, errorExpected: false},
-	{name: "allowed rename", allowedFileTypes: []string{"image/jpeg", "image/png"}, renameFile: true, errorExpected: false},
-	{name: "not allowed", allowedFileTypes: []string{"image/jpeg"}, renameFile: false, errorExpected: true},
+	{
+		name:             "allowed no rename",
+		allowedFileTypes: []string{"image/jpeg", "image/png"},
+		renameFile:       false,
+		errorExpected:    false},
+	{
+		name:             "allowed rename",
+		allowedFileTypes: []string{"image/jpeg", "image/png"},
+		renameFile:       true,
+		errorExpected:    false},
+	{
+		name:             "not allowed",
+		allowedFileTypes: []string{"image/jpeg"},
+		renameFile:       false,
+		errorExpected:    true,
+	},
 }
 
 func TestTools_UploadFiles(t *testing.T) {
@@ -90,6 +103,10 @@ func TestTools_UploadFiles(t *testing.T) {
 		}
 
 		if !e.errorExpected && err != nil {
+			t.Errorf("%s: error received but none expected", e.name)
+		}
+
+		if e.errorExpected && err == nil {
 			t.Errorf("%s: error expected but none received", e.name)
 		}
 
@@ -160,3 +177,59 @@ func TestTools_CreateDirIfNotExist(t *testing.T) {
 	_ = os.Remove("./textdata/myDir")
 }
 
+var slugTests = []struct {
+	name          string
+	s             string
+	expected      string
+	errorExpected bool
+}{
+	{
+		name:          "valid string",
+		s:             "now is the time",
+		expected:      "now-is-the-time",
+		errorExpected: false,
+	},
+	{
+		name:          "empty string",
+		s:             "",
+		expected:      "",
+		errorExpected: true,
+	},
+	{
+		name:          "complex string",
+		s:             "Now is the time for all GOOD men! _ $%# taco & fish ##@$ 123",
+		expected:      "now-is-the-time-for-all-good-men-taco-fish-123",
+		errorExpected: false,
+	},
+	{
+		name:          "korean string",
+		s:             "한국어",
+		expected:      "",
+		errorExpected: true,
+	},
+	{
+		name:          "korean and roman string",
+		s:             "한국어 now is the time %%% 123",
+		expected:      "now-is-the-time-123",
+		errorExpected: false,
+	},
+}
+
+func TestTools_Slugify(t *testing.T) {
+	var testTool Tools
+
+	for _, e := range slugTests {
+		slug, err := testTool.Slugify(e.s)
+		if err != nil && !e.errorExpected {
+			t.Errorf("%s: error received when none expected: %s", e.name, err.Error())
+		}
+
+		if !e.errorExpected && slug != e.expected {
+			t.Errorf("%s: wrong slug returned; expected %s but got %s", e.name, e.expected, slug)
+		}
+
+		if err == nil && e.errorExpected {
+			t.Errorf("%s: error expected when none receivded: %s", e.name, err.Error())
+		}
+	}
+}
