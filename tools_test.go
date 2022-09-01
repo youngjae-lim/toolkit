@@ -1,6 +1,7 @@
 package toolkit
 
 import (
+	"bytes"
 	"fmt"
 	"image"
 	"image/png"
@@ -258,5 +259,60 @@ func TestTools_DownloadStaticFile(t *testing.T) {
 	_, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		t.Error(err)
+	}
+}
+
+var jsonTests = []struct {
+	name          string
+	json          string
+	errorExpected bool
+	maxSize       int
+	allowUnknown  bool
+}{
+	{
+		name:          "good json",
+		json:          `{"foo": "bar"}`,
+		errorExpected: false,
+		maxSize:       1024,
+		allowUnknown:  false,
+	},
+}
+
+func TestTools_ReadJSON(t *testing.T) {
+	var testTool Tools
+
+	for _, e := range jsonTests {
+		// Set the max file size
+		testTool.MaxFileSize = e.maxSize
+
+		// Set allow/disallow unknown fields
+		testTool.AllowUnknownFields = e.allowUnknown
+
+		// Declare a variable to read the decoded json into
+		var decodedJSON struct {
+			Foo string `json:"foo"`
+		}
+
+		// Create a request with the body
+		req, err := http.NewRequest("POST", "/", bytes.NewReader([]byte(e.json)))
+		if err != nil {
+			t.Log("Error:", err)
+		}
+
+		// Create a recorder
+		rr := httptest.NewRecorder()
+
+		err = testTool.ReadJSON(rr, req, &decodedJSON)
+
+		if e.errorExpected && err == nil {
+			t.Errorf("%s: error expected, but none receivded", e.name)
+		}
+
+		if !e.errorExpected && err != nil {
+			t.Errorf("%s: error not expected, but one received: %s", e.name, err.Error())
+		}
+
+		req.Body.Close()
+
 	}
 }
