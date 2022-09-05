@@ -431,12 +431,19 @@ func TestTools_ErrorJSON(t *testing.T) {
 	}
 }
 
+// Transport specifies the mechanism by which individual HTTP requests are made.
+// Instead of using the default http.Transport, we'll replace it with our own
+// implementation. To implement a transport, we'll have to implement http.RoundTripper interface.
+// This interface has just one method RoundTrip(*Request) (*Response, error).
+// Using this approach, we don't have to spin up a HTTP server before each test and
+// replace the service url with test server url.
 type RoundTripFunc func(req *http.Request) *http.Response
 
 func (f RoundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 	return f(req), nil
 }
 
+// NewTestClient returns *http.Client with Transport replaced to avoid making real calls.
 func NewTestClient(fn RoundTripFunc) *http.Client {
 	return &http.Client{
 		Transport: fn,
