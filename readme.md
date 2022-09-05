@@ -16,4 +16,4 @@ The included tools are:
 
 ## Installation
 
-`go get -u github.com/youngjae-lim/toolkit`
+`go get -u github.com/youngjae-lim/toolkit/v2`
